@@ -2,7 +2,6 @@ import requests
 import os
 import json
 from dotenv import load_dotenv
-from capus import Campus
 
 load_dotenv()
 SECRET = os.getenv("SECRET")
