@@ -6,18 +6,24 @@ from dotenv import load_dotenv
 import time
 
 load_dotenv()
-SECRET = os.getenv("SECRET")
-ID = os.getenv("ID")
-token_url = "https://api.intra.42.fr/oauth/token"
-token_data = {
-    "grant_type": "client_credentials",
-    "client_id": ID,
-    "client_secret": SECRET
-}
 
-response = requests.post(token_url, data=token_data)
-access_token = response.json()["access_token"]
-headers = {"Authorization": f"Bearer {access_token}"}
+def get_new_token():
+    SECRET = os.getenv("SECRET")
+    ID = os.getenv("ID")
+    token_url = "https://api.intra.42.fr/oauth/token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": ID,
+        "client_secret": SECRET
+    }
+    response = requests.post(token_url, data=token_data)
+    access_token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    return headers
+
+
+    
+headers = get_new_token()
 
 #get_campus()
 
@@ -66,6 +72,7 @@ def normalize_date(date):
 
 
 def correction_point_historics(user):
+    global headers
     combined_data = []
     page = 1
     while True:
@@ -81,6 +88,7 @@ def correction_point_historics(user):
         elif resp.status_code != 200:
             return []
         data = resp.json()
+        time.sleep(2)
         if not data:
             break
         combined_data.extend(data)
@@ -89,6 +97,7 @@ def correction_point_historics(user):
 
 
 def scale_teams(user):
+    global headers
     combined_data = []
     page = 1
     while True:
@@ -104,6 +113,7 @@ def scale_teams(user):
         elif resp.status_code != 200:
             return []
         data = resp.json()
+        time.sleep(2)
         if not data:
             break
         combined_data.extend(data)
@@ -133,19 +143,15 @@ def update_evaluation_points_date_map(i, correction, total, append_value, norm_d
 def update_projects_map(i, correction, evaluation_history):
     global projects_map
     global project_count_map
+    global headers
     if correction.get("scale_team_id") is not None:
         id = correction.get("scale_team_id") or 0
         points = correction.get("sum") or 0
-        if i == 0:
-            total = correction.get("total") or 0
+        if (i == 0): # just an edge case for now will default to 3
             if "kick off reset" in projects_map:
-                projects_map["kick off reset"] += total
+                projects_map["kick off reset"] += 3
             else:
-                projects_map["kick off reset"] = total
-            if ("kick off reset" in project_count_map):
-                project_count_map["kick off reset"] += 1
-            else:
-                project_count_map["kick off reset"] = 1
+                projects_map["kick off reset"] = 3
         for evaluation in evaluation_history:
             eval_id = evaluation.get("id") or 0
             if (eval_id == id):
@@ -159,20 +165,25 @@ def update_projects_map(i, correction, evaluation_history):
                 else:
                     project_count_map[project_path] = 1
                 return
-        if "Unknown" in projects_map:
-            projects_map["Unknown"] += points
+        if "Evaluator cancelled a defense" in projects_map:
+            projects_map["Evaluator cancelled a defense"] += points
         else:
-            projects_map["Unknown"] = points
-        if ("Unknown" in project_count_map):
-            project_count_map["Unknown"] += 1
+            projects_map["Evaluator cancelled a defense"] = points
+        if ("Evaluator cancelled a defense" in project_count_map):
+            project_count_map["Evaluator cancelled a defense"] += 1
         else:
-            project_count_map["Unknown"] = 1
+            project_count_map["Evaluator cancelled a defense"] = 1
     else:
         explanation = correction.get("reason") or "Unknown"
         points = correction.get("sum") or 0
         total = correction.get("total") or 0
-        if i == 0:
+        if i == 0 and explanation != "sanction":
             points = (total + points)
+        else:
+            if "kick off reset" in projects_map:
+                projects_map["kick off reset"] += total
+            else:
+                projects_map["kick off reset"] = total
         if explanation in projects_map:
             projects_map[explanation] += points
         else:
@@ -181,6 +192,7 @@ def update_projects_map(i, correction, evaluation_history):
 
 def updated_transaction_count_per_day(norm_date):
     global transactions_per_day
+    global headers
     if norm_date in transactions_per_day:
         transactions_per_day[norm_date] += 1
     else:
@@ -189,6 +201,7 @@ def updated_transaction_count_per_day(norm_date):
 
 def update_active_user_count(user, evaluation_history, correction_history):
     global total_active_users_per_date
+    global headers
     active = bool(user.get("active?"))
     dates = []
     for evals in evaluation_history:
@@ -221,6 +234,10 @@ def get_users_evaluation_history(user):
     global total_users_analyzed
     global transactions_per_day
     global total_amount_of_transactions
+    global headers
+    if total_users_analyzed != 0 and total_users_analyzed % 50 == 0:
+        print("Got new Token")
+        headers = get_new_token()
     start_date = get_cursus_start(user=user)
     if start_date == None:
         return
@@ -251,6 +268,8 @@ def get_users_evaluation_history(user):
     time.sleep(5) # delay because of the rate limit...
 
 def iterate_all_campus_users(campus_id):
+    global total_users_analyzed
+    global headers
     page = 1
     while True:
         url = "https://api.intra.42.fr/v2/users"
@@ -273,7 +292,7 @@ def iterate_all_campus_users(campus_id):
         if not data:
             break
         page += 1
-        time.sleep(4) # delay because of the rate limit...
+        time.sleep(3) # delay because of the rate limit...
 
 def get_cursus_start(user, cursus_id=21):
     url = f"https://api.intra.42.fr/v2/users/{user['login']}/cursus_users"
