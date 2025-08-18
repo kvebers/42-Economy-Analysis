@@ -134,18 +134,6 @@ def scale_teams(user):
 
 def update_evaluation_points_date_map(i, correction, total, append_value, norm_date):
     global evaluation_points_date_map
-    if i == 0:
-        if correction.get("scale_team_id") is not None:
-            if norm_date in evaluation_points_date_map:
-                evaluation_points_date_map[norm_date] += total
-            else:
-                evaluation_points_date_map[norm_date] = total
-        else:
-            if norm_date in evaluation_points_date_map:
-                evaluation_points_date_map[norm_date] += (total + append_value)
-            else:
-                evaluation_points_date_map[norm_date] = (total + append_value)
-        return
     if norm_date in evaluation_points_date_map:
         evaluation_points_date_map[norm_date] += append_value
     else:
@@ -159,11 +147,6 @@ def update_projects_map(i, correction, evaluation_history):
     if correction.get("scale_team_id") is not None:
         id = correction.get("scale_team_id") or 0
         points = correction.get("sum") or 0
-        if (i == 0): # just an edge case for now will default to 3
-            if "kick off reset" in projects_map:
-                projects_map["kick off reset"] += 3
-            else:
-                projects_map["kick off reset"] = 3
         for evaluation in evaluation_history:
             eval_id = evaluation.get("id") or 0
             if (eval_id == id):
@@ -188,14 +171,6 @@ def update_projects_map(i, correction, evaluation_history):
     else:
         explanation = correction.get("reason") or "Unknown"
         points = correction.get("sum") or 0
-        total = correction.get("total") or 0
-        if i == 0 and explanation != "sanction":
-            points = (total + points)
-        else:
-            if "kick off reset" in projects_map:
-                projects_map["kick off reset"] += total
-            else:
-                projects_map["kick off reset"] = total
         if explanation in projects_map:
             projects_map[explanation] += points
         else:
@@ -267,7 +242,7 @@ def get_users_evaluation_history(user):
     if start_date == None:
         return
     user_name = user.get("login")
-    time.sleep(2) # delay because of the rate limit...
+    time.sleep(1) # delay because of the rate limit...
     evaluation_history = scale_teams(user=user_name)
     correction_history = correction_point_historics(user=user_name)
     evaluation_history = filter_by_start(evaluation_history, start_date)
@@ -291,7 +266,7 @@ def get_users_evaluation_history(user):
     update_active_user_count(user, evaluation_history, correction_history)
     updated_evaluation_per_day_map(evaluation_history)
     dump_global_to_file()
-    time.sleep(5) # delay because of the rate limit...
+    time.sleep(3) # delay because of the rate limit...
 
 def iterate_all_campus_users(campus_id):
     global total_users_analyzed
