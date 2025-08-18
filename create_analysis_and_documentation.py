@@ -37,3 +37,17 @@ evals_per_day_map_sorted = sorted(
 basic_plot(data_map=evals_per_day_map_sorted, x_axis="Date", y_axis="Eval Count", title="Evals per day map", save_name="evals_per_day_count")
 
 
+not_active_points_map = data.get("not_active_points_map", {})
+
+not_active_points_map_sorted = sorted(
+    not_active_points_map.items(),
+    key=lambda x: datetime.fromisoformat(x[0])
+)
+
+not_active_points_total = 0
+not_active_points_map_total = []
+for key, value in not_active_points_map_sorted:
+    not_active_points_total += value
+    not_active_points_map_total.append((key, not_active_points_total))
+
+basic_plot(data_map=not_active_points_map_total, x_axis="Date", y_axis="Points", title="Points that are not active in the system", save_name="non_active_points")
