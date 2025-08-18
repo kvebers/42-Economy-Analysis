@@ -88,6 +88,7 @@ def correction_point_historics(user):
         resp = requests.get(url, headers=headers, params=params)
         if resp.status_code == 429:
             time.sleep(20)
+            print("Token Was generated")
             continue
         elif resp.status_code == 401:
             headers = get_new_token()
@@ -245,8 +246,6 @@ def get_users_evaluation_history(user):
     time.sleep(1) # delay because of the rate limit...
     evaluation_history = scale_teams(user=user_name)
     correction_history = correction_point_historics(user=user_name)
-    evaluation_history = filter_by_start(evaluation_history, start_date)
-    correction_history = filter_by_start(correction_history, start_date)
     points = user.get("correction_point") or 0
     active = bool(user.get("active?"))
     get_total_active_points += points
@@ -285,6 +284,8 @@ def iterate_all_campus_users(campus_id):
             continue
         elif resp.status_code == 401:
             headers = get_new_token()
+            print("New Token was generated")
+            continue
         elif resp.status_code != 200:
             print(f"Error {resp.status_code}: {resp.text}")
             break
@@ -303,16 +304,16 @@ def get_cursus_start(user, cursus_id=21):
     resp = requests.get(url, headers=headers)
     if resp.status_code == 429:
         time.sleep(20)
-        get_cursus_start(user, cursus_id=21)
+        return get_cursus_start(user, cursus_id=21)
     elif resp.status_code == 401:
         headers = get_new_token()
-        get_cursus_start(user, cursus_id=21)
+        return get_cursus_start(user, cursus_id=21)
     elif resp.status_code != 200:
         print("Error")
         return None
     for cursus in resp.json():
-        if cursus["cursus_id"] == cursus_id:
-            return cursus["begin_at"]
+        if "cursus_id" in cursus and cursus["cursus_id"] == cursus_id:
+            return cursus.get("begin_at")
     return None
 
 
