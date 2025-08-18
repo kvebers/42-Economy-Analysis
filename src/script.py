@@ -39,6 +39,8 @@ total_amount_of_transactions = 0
 transactions_per_day = {}
 total_active_users_per_date = {}
 project_count_map = {}
+not_active_points_map = {}
+evals_per_day_map = {}
 
 def dump_global_to_file(filename="campus.json"):
     global projects_map, evaluation_points_date_map, total_users_analyzed, project_count_map
@@ -52,7 +54,9 @@ def dump_global_to_file(filename="campus.json"):
         "projects_map": projects_map,
         "project_count_map": project_count_map,
         "evaluation_points_date_map": evaluation_points_date_map,
-        "total_active_users_per_date": total_active_users_per_date
+        "total_active_users_per_date": total_active_users_per_date,
+        "not_active_points_map": not_active_points_map,
+        "evals_per_day_map": evals_per_day_map
     }
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
@@ -85,6 +89,10 @@ def correction_point_historics(user):
         if resp.status_code == 429:
             time.sleep(20)
             continue
+        elif resp.status_code == 401:
+            headers = get_new_token()
+            print("Token Was generated")
+            continue
         elif resp.status_code != 200:
             return []
         data = resp.json()
@@ -109,6 +117,10 @@ def scale_teams(user):
         resp = requests.get(url, headers=headers, params=params)
         if resp.status_code == 429:
             time.sleep(20)
+            continue
+        elif resp.status_code == 401:
+            headers = get_new_token()
+            print("Token Was generated")
             continue
         elif resp.status_code != 200:
             return []
@@ -202,6 +214,7 @@ def updated_transaction_count_per_day(norm_date):
 def update_active_user_count(user, evaluation_history, correction_history):
     global total_active_users_per_date
     global headers
+    global not_active_points_map
     active = bool(user.get("active?"))
     dates = []
     for evals in evaluation_history:
@@ -217,6 +230,12 @@ def update_active_user_count(user, evaluation_history, correction_history):
     end_date = max(dates)
     if active:
         end_date = datetime.now()
+    else:
+        norm_date = end_date.date().isoformat()
+        if norm_date in not_active_points_map:
+            not_active_points_map[norm_date] += user.get("correction_point") or 0
+        else:
+            not_active_points_map[norm_date] = user.get("correction_point") or 0
     current = start_date.date()
     end = end_date.date()
     while current <= end:
@@ -228,6 +247,15 @@ def update_active_user_count(user, evaluation_history, correction_history):
         current += timedelta(days=1)
 
     
+def updated_evaluation_per_day_map(evaluation_history):
+    global evals_per_day_map
+    for evaluation in evaluation_history:
+        date = normalize_date(evaluation.get("created_at"))
+        if date in evals_per_day_map:
+            evals_per_day_map[date] += 1
+        else:
+            evals_per_day_map[date] = 1
+        
 def get_users_evaluation_history(user):
     global evaluation_points_non_active_users
     global get_total_active_points
@@ -235,9 +263,6 @@ def get_users_evaluation_history(user):
     global transactions_per_day
     global total_amount_of_transactions
     global headers
-    if total_users_analyzed != 0 and total_users_analyzed % 50 == 0:
-        print("Got new Token")
-        headers = get_new_token()
     start_date = get_cursus_start(user=user)
     if start_date == None:
         return
@@ -264,6 +289,7 @@ def get_users_evaluation_history(user):
         if (correction.get("scale_team_id") is not None):
             updated_transaction_count_per_day(norm_date=norm_date)
     update_active_user_count(user, evaluation_history, correction_history)
+    updated_evaluation_per_day_map(evaluation_history)
     dump_global_to_file()
     time.sleep(5) # delay because of the rate limit...
 
@@ -282,6 +308,8 @@ def iterate_all_campus_users(campus_id):
         if resp.status_code == 429:
             time.sleep(20)
             continue
+        elif resp.status_code == 401:
+            headers = get_new_token()
         elif resp.status_code != 200:
             print(f"Error {resp.status_code}: {resp.text}")
             break
@@ -295,9 +323,17 @@ def iterate_all_campus_users(campus_id):
         time.sleep(3) # delay because of the rate limit...
 
 def get_cursus_start(user, cursus_id=21):
+    global headers
     url = f"https://api.intra.42.fr/v2/users/{user['login']}/cursus_users"
     resp = requests.get(url, headers=headers)
-    if resp.status_code != 200:
+    if resp.status_code == 429:
+        time.sleep(20)
+        get_cursus_start(user, cursus_id=21)
+    elif resp.status_code == 401:
+        headers = get_new_token()
+        get_cursus_start(user, cursus_id=21)
+    elif resp.status_code != 200:
+        print("Error")
         return None
     for cursus in resp.json():
         if cursus["cursus_id"] == cursus_id:
