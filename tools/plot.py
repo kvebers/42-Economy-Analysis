@@ -70,3 +70,16 @@ def multiplot(datasets: list, title="default", x_axis="default", y_axis="default
     plt.legend()
     plt.tight_layout()
     plt.savefig(f"img/{save_name}.png", dpi=300)
+
+
+def plot_projects(data, title="default", save_name="default", x_axis="default", y_axis="default"):
+    projects = list(data.keys())
+    values = list(data.values())
+    plt.figure(figsize=(12, 6))
+    plt.bar(projects, values)
+    plt.xticks(rotation=40, ha="right")
+    plt.ylabel(y_axis)
+    plt.xlabel(x_axis)
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(f"img/{save_name}", dpi=300)

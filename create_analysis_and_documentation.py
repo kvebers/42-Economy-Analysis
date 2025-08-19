@@ -1,7 +1,7 @@
 from collections import defaultdict
 import json
 from datetime import datetime
-from tools.plot import basic_plot, multiplot
+from tools.plot import basic_plot, multiplot, plot_projects
 
 
 with open("data/campus.json", "r") as f:
@@ -97,3 +97,44 @@ for key, value in evaluation_points_date_list_precise:
     delta_points.append((key, new_value))
 
 basic_plot(data_list=delta_points, x_axis="Day", y_axis="Points", title="Points per Active User over Time", save_name="points_per_user_in_economy_over_time")
+
+
+project_count_map = data.get("project_count_map", {})
+just_common_core = {}
+for key, value in project_count_map.items():
+    if "inner-circle" in key:
+        name = key.split("inner-circle/")
+        just_common_core[name[1]] = value // 2
+
+
+plot_projects(just_common_core, save_name="inner_circle", title="Inner-Circle Evaluations", x_axis="Projects", y_axis="Amount of evaluations done")
+
+
+just_common_core = {}
+for key, value in project_count_map.items():
+    if "outer-circle" in key:
+        name = key.split("outer-circle/")
+        just_common_core[name[1]] = value // 2
+
+
+plot_projects(just_common_core, save_name="outer_circle", title="Outer-Circle Evaluations", x_axis="Projects", y_axis="Amount of evaluations done")
+
+
+
+just_common_core = {}
+for key, value in project_count_map.items():
+    if "germany-basecamp/basecamp-" in key:
+        name = key.split("germany-basecamp/basecamp-")
+        if name[1] not in just_common_core:
+            just_common_core[name[1]] = value // 2
+        else:
+            just_common_core[name[1]] += value // 2
+    if "c-piscine/" in key:
+        name = key.split("c-piscine/")
+        if name[1] not in just_common_core:
+            just_common_core[name[1]] = value // 2
+        else:
+            just_common_core[name[1]] += value // 2
+
+
+plot_projects(just_common_core, save_name="piscine", title="Piscine Evaluations", x_axis="Projects", y_axis="Amount of evaluations done")
