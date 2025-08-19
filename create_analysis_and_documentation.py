@@ -1,24 +1,7 @@
+from collections import defaultdict
 import json
-import matplotlib.pyplot as plt
 from datetime import datetime
-
-def basic_plot(data_list, title, x_axis, y_axis, save_name):
-    dates = [d for d, _ in data_list]
-    counts = [c for _, c in data_list]
-    if len(dates) > 1:
-        dates = dates[:-1]
-        counts = counts[:-1]
-    spots = 30
-    if len(counts) != 0:
-        spots = int(len(counts) / 10)
-    plt.figure(figsize=(10, 5))
-    plt.plot(dates, counts, marker=".")
-    plt.xticks(dates[::spots], rotation=30)
-    plt.title(title)
-    plt.xlabel(x_axis)
-    plt.ylabel(y_axis)
-    plt.tight_layout()
-    plt.savefig(f"img/{save_name}", dpi=300)
+from tools.plot import basic_plot, multiplot
 
 
 with open("data/campus.json", "r") as f:
@@ -31,7 +14,7 @@ total_active_users_per_date_sorted = sorted(
     key=lambda x: datetime.fromisoformat(x[0])
 )
 
-basic_plot(data_map=total_active_users_per_date_sorted, x_axis="Date", y_axis="User Count", title="User Count Over Time", save_name="user_over_time_count")
+basic_plot(data_list=total_active_users_per_date_sorted, x_axis="Date", y_axis="User Count", title="User Count Over Time", save_name="user_over_time_count")
 
 evals_per_day_map = data.get("evals_per_day_map", {})
 
@@ -40,7 +23,7 @@ evals_per_day_list_sorted = sorted(
     key=lambda x: datetime.fromisoformat(x[0])
 )
 
-basic_plot(data_map=evals_per_day_list_sorted, x_axis="Date", y_axis="Eval Count", title="Evals per day map", save_name="evals_per_day_count")
+basic_plot(data_list=evals_per_day_list_sorted, x_axis="Date", y_axis="Eval Count", title="Evals per day map", save_name="evals_per_day_count")
 
 
 not_active_points_map = data.get("not_active_points_map", {})
@@ -56,4 +39,44 @@ for key, value in not_active_points_map_sorted:
     not_active_points_total += value
     not_active_points_list_total.append((key, not_active_points_total))
 
-basic_plot(data_map=not_active_points_list_total, x_axis="Date", y_axis="Points", title="Points that are not active in the system", save_name="non_active_points")
+basic_plot(data_list=not_active_points_list_total, x_axis="Date", y_axis="Points", title="Points that are not active in the system", save_name="non_active_points")
+
+
+get_total_active_points = data.get("get_total_active_points", {})
+evaluation_points_date_map = data.get("evaluation_points_date_map")
+evaluation_points_date_list = sorted(
+    evaluation_points_date_map.items(),
+    key=lambda x: datetime.fromisoformat(x[0])
+)
+
+evaluation_points_date_list_precise = []
+for key, value in evaluation_points_date_list[::-1]:
+    evaluation_points_date_list_precise.append((key, get_total_active_points))
+    get_total_active_points -= value
+
+evaluation_points_date_list_precise.sort(key=lambda x: x[0])
+
+basic_plot(data_list=evaluation_points_date_list_precise, x_axis="Date", y_axis="Points per day", save_name="points_over_time", title="Evaluation Points In the System Over Time")
+
+data_lists=[
+    (evaluation_points_date_list_precise, "Total Active Points"),
+    (not_active_points_list_total, "Non Active Points"),
+]
+
+multiplot(data_lists, x_axis="Date", y_axis="Points per day", save_name="points_over_time_vs_non_active_points", title="Total vs Non Active Points")
+
+
+monthly_evals_data = defaultdict(int)
+for date_str, count in evals_per_day_map.items():
+    dt = datetime.fromisoformat(date_str)
+    key = dt.strftime("%Y-%m-01")
+    monthly_evals_data[key] += count
+
+evals_per_month_list_sorted = sorted(
+    monthly_evals_data.items(),
+    key=lambda x: datetime.strptime(x[0], "%Y-%m-%d")
+)
+
+basic_plot(data_list=evals_per_month_list_sorted, x_axis="Month", y_axis="Eval Count", title="Evals per Month", save_name="evals_per_month_count")
+
+
