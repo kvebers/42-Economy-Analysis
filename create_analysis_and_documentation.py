@@ -80,3 +80,20 @@ evals_per_month_list_sorted = sorted(
 basic_plot(data_list=evals_per_month_list_sorted, x_axis="Month", y_axis="Eval Count", title="Evals per Month", save_name="evals_per_month_count")
 
 
+total_active_users_per_date
+not_active_points_map
+
+delta_points = []
+for key, value in evaluation_points_date_list_precise:
+    active_user = 1
+    not_active_point = 0
+    if key in not_active_points_map:
+        not_active_point = not_active_points_map[key]
+    if key in total_active_users_per_date:
+        active_user = total_active_users_per_date[key]
+    if active_user == 0:
+        active_user = 1
+    new_value = (value - not_active_point) / active_user
+    delta_points.append((key, new_value))
+
+basic_plot(data_list=delta_points, x_axis="Day", y_axis="Points", title="Points per User over Time", save_name="points_per_user_in_economy_over_time")

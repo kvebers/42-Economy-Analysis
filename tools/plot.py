@@ -15,9 +15,12 @@ def locator_and_formater(span):
     return locator, formatter
 
 
-def basic_plot(data_list, title="default", x_axis="default", y_axis="default", save_name="default"):
-    dates = [datetime.fromisoformat(d) for d, _ in data_list]
-    counts = [c for _, c in data_list]
+def basic_plot(data_list, title="default", x_axis="default", y_axis="default", save_name="default", start_date="2021-06-01"):
+    if start_date:
+        start_date = datetime.fromisoformat(start_date)    
+    filtered_data = [(datetime.fromisoformat(d), c) for d, c in data_list
+                     if not start_date or datetime.fromisoformat(d) >= start_date]
+    dates, counts = zip(*filtered_data)
     if len(dates) > 1:
         dates = dates[:-1]
         counts = counts[:-1]
@@ -36,17 +39,25 @@ def basic_plot(data_list, title="default", x_axis="default", y_axis="default", s
     plt.savefig(f"img/{save_name}.png", dpi=300)
 
 
-def multiplot(datasets: list, title="default", x_axis="default", y_axis="default", save_name="default"):
+def multiplot(datasets: list, title="default", x_axis="default", y_axis="default", save_name="default", start_date="2021-06-01"):
     plt.figure(figsize=(10, 5))
     all_dates = []
+    
+    if start_date:
+        start_date_dt = datetime.fromisoformat(start_date)
+    else:
+        start_date_dt = None
+    
     for data_list, label in datasets:
-        dates = [datetime.fromisoformat(d) for d, _ in data_list]
-        counts = [c for _, c in data_list]
+        filtered_data = [(datetime.fromisoformat(d), c) for d, c in data_list
+                        if not start_date_dt or datetime.fromisoformat(d) >= start_date_dt]
+        dates, counts = zip(*filtered_data)
         if len(dates) > 1:
             dates = dates[:-1]
             counts = counts[:-1]
         all_dates.extend(dates)
         plt.plot(dates, counts, label=label, marker=".")
+    
     span = (max(all_dates) - min(all_dates)).days
     locator, formatter = locator_and_formater(span=span)
     ax = plt.gca()

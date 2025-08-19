@@ -6,6 +6,9 @@ Total Points in The 42 Heilbronn Eco System
 ![Non Active Points Growth Over Time](img/points_over_time_vs_non_active_points.png)
 Points held by active users and points held by non active users
 
+![Non Active Points Growth Over Time](img/points_per_user_in_economy_over_time.png)
+Points held by active users and points held by non active users
+
 ![Active users in given date](img/user_over_time_count.png)
 Active user is who still does projects at 42 and is not allumnied, or blackholed
 Student activity is meassured since piscine till alumation.
