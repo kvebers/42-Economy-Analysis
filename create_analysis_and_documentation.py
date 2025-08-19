@@ -96,4 +96,4 @@ for key, value in evaluation_points_date_list_precise:
     new_value = (value - not_active_point) / active_user
     delta_points.append((key, new_value))
 
-basic_plot(data_list=delta_points, x_axis="Day", y_axis="Points", title="Points per User over Time", save_name="points_per_user_in_economy_over_time")
+basic_plot(data_list=delta_points, x_axis="Day", y_axis="Points", title="Points per Active User over Time", save_name="points_per_user_in_economy_over_time")
