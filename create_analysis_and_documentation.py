@@ -15,7 +15,7 @@ def basic_plot(data_map, title, x_axis, y_axis, save_name):
     plt.savefig(f"img/{save_name}", dpi=300)
 
 
-with open("data/perform_temp_analysis.json", "r") as f:
+with open("data/campus.json", "r") as f:
     data = json.load(f)
 
 
