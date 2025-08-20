@@ -1,5 +1,11 @@
 Repo analysis 42 evaluation point exchange over time!
 
+
+How to run:
+```
+make
+```
+
 ![Non Active Points Growth Over Time](img/points_over_time.png)
 Total Points in The 42 Heilbronn Eco System
 

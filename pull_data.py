@@ -42,7 +42,7 @@ project_count_map = {}
 not_active_points_map = {}
 evals_per_day_map = {}
 
-def dump_global_to_file(filename="campus.json"):
+def dump_global_to_file(filename="data/campus.json"):
     global projects_map, evaluation_points_date_map, total_users_analyzed, project_count_map
     global get_total_active_points, total_amount_of_transactions, evaluation_points_non_active_users
     global total_active_users_per_date
